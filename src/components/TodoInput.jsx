@@ -1,13 +1,4 @@
-import { useState, useCallback } from "react";
-
-const TodoInput = ({ onAddTask }) => {
-  const [task, setTask] = useState("");
-
-  const handleAdd = useCallback(() => {
-    onAddTask(task);
-    setTask("");
-  }, [task, onAddTask]);
-
+function TodoInput({ task, onChange, onSubmit, isEditing }) {
   return (
     <div className="flex justify-center mb-4">
       <input
@@ -15,16 +6,20 @@ const TodoInput = ({ onAddTask }) => {
         placeholder="Enter a task"
         className="border p-2 mr-2 rounded-lg"
         value={task}
-        onChange={(e) => setTask(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
       />
       <button
-        className="text-blue-500 border-blue-500 border-2 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-lg cursor-pointer font-bold"
-        onClick={handleAdd}
+        className={`px-4 py-2 rounded-lg font-bold border-2 ${
+          isEditing
+            ? "text-yellow-500 border-yellow-500 hover:bg-yellow-500 hover:text-white"
+            : "text-blue-500 border-blue-500 hover:bg-blue-500 hover:text-white"
+        }`}
+        onClick={onSubmit}
       >
-        Add Task
+        {isEditing ? "Edit Task" : "Add Task"}
       </button>
     </div>
   );
-};
+}
 
 export default TodoInput;

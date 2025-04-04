@@ -1,12 +1,18 @@
-import { useState, useMemo } from "react";
-import { useTodo } from "./hooks/useTodo";
-import TodoInput from "./components/TodoInput.jsx";
-import TodoFilters from "./components/TodoFilters.jsx";
-import TodoList from "./components/TodoList.jsx";
-import './App.css'
+import React, { Suspense, useReducer, useMemo } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import "./App.css";
+import { addTodo, editTodo } from "./features/todoSlice";
+import { formReducer, initialState } from "./reducers/formReducer";
+
+const TodoInput = React.lazy(() => import("./components/TodoInput"));
+const TodoFilters = React.lazy(() => import("./components/TodoFilters"));
+const TodoList = React.lazy(() => import("./components/TodoList"));
+
 function App() {
-  const { todoList, handleAddTask, handleCompleteTask, handleRemoveTask } = useTodo();
-  const [filter, setFilter] = useState("all");
+  const dispatchRedux = useDispatch();
+  const todoList = useSelector((state) => state.todo.value);
+  const [filter, setFilter] = React.useState("all");
+  const [formState, dispatchForm] = useReducer(formReducer, initialState);
 
   const filteredTodos = useMemo(() => {
     return todoList.filter((todo) => {
@@ -16,13 +22,43 @@ function App() {
     });
   }, [todoList, filter]);
 
+  const handleSubmit = () => {
+    const text = formState.taskInput.trim();
+    if (!text) return;
+
+    if (formState.isEditing) {
+      dispatchRedux(editTodo({ id: formState.editId, text }));
+    } else {
+      dispatchRedux(addTodo(text));
+    }
+
+    dispatchForm({ type: "RESET" });
+  };
+
+  const handleEdit = (todo) => {
+    dispatchForm({
+      type: "START_EDIT",
+      payload: { id: todo.id, text: todo.text },
+    });
+  };
+
   return (
     <div className="container mx-auto">
       <h2 className="text-center font-bold text-lg my-4">To-Do List</h2>
-
-      <TodoInput onAddTask={handleAddTask} />
-      <TodoFilters filter={filter} setFilter={setFilter} />
-      <TodoList todos={filteredTodos} onComplete={handleCompleteTask} onRemove={handleRemoveTask} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <TodoInput
+          task={formState.taskInput}
+          onChange={(val) => dispatchForm({ type: "SET_INPUT", payload: val })}
+          onSubmit={handleSubmit}
+          isEditing={formState.isEditing}
+        />
+        <TodoFilters setFilter={setFilter} />
+        <TodoList
+          filteredTodos={filteredTodos}
+          dispatchRedux={dispatchRedux}
+          onEdit={handleEdit}
+        />
+      </Suspense>
     </div>
   );
 }
